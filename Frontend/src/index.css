@@ -2,183 +2,131 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
-@import "@fontsource/jetbrains-mono/700.css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
 
 /* Brutalist Industrial Design System - Dark Mode Only */
 
 @layer base {
   :root {
+    /* Pure black background */
     --background: 0 0% 4%;
     --foreground: 0 0% 100%;
 
+    /* Cards slightly elevated */
     --card: 0 0% 6%;
     --card-foreground: 0 0% 100%;
 
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 100%;
 
+    /* Industrial Yellow - Primary */
     --primary: 45 93% 47%;
     --primary-foreground: 0 0% 0%;
 
+    /* Muted dark surfaces */
     --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground: 0 0% 80%;
 
     --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 65%;
+    --muted-foreground: 0 0% 60%;
 
     --accent: 45 93% 47%;
     --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 18%;
     --input: 0 0% 12%;
     --ring: 45 93% 47%;
 
+    /* Sharp industrial radius */
     --radius: 0.25rem;
 
-    /* Custom tokens */
-    --yellow-glow: 0 0 20px hsl(45 93% 47% / 0.3);
-    --border-accent: 45 93% 47%;
+    /* Typography */
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Inter', sans-serif;
+
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 45 93% 47%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 45 93% 47%;
   }
 
+  /* Force dark mode only */
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 45 93% 47%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 80%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 45 93% 47%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 45 93% 47%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 45 93% 47%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 45 93% 47%;
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', sans-serif;
+  html {
+    color-scheme: dark;
   }
 
-  /* Monospace utility class */
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
+  }
+
   .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
   }
 }
 
 @layer components {
-  /* Industrial input styling */
-  .input-industrial {
-    @apply bg-input border border-border text-foreground font-mono text-sm;
-    @apply focus:border-primary focus:outline-none focus:ring-0;
-    @apply placeholder:text-muted-foreground;
-    transition: border-color 0.15s ease;
+  .industrial-border {
+    @apply border border-border;
   }
 
-  .input-industrial:focus {
-    box-shadow: var(--yellow-glow);
+  .industrial-border-accent {
+    @apply border border-primary;
   }
 
-  /* Card with accent border */
-  .card-industrial {
-    @apply bg-card border border-border;
-    @apply hover:border-primary/50;
-    transition: border-color 0.2s ease;
+  .data-card {
+    @apply bg-card border border-border p-4;
   }
 
-  /* Section header styling */
-  .section-header {
-    @apply font-mono text-xs uppercase tracking-widest text-primary;
-    letter-spacing: 0.2em;
-  }
-
-  /* Data point styling */
-  .data-point {
-    @apply text-sm text-muted-foreground leading-relaxed;
-    @apply border-l-2 border-border pl-4;
-    @apply hover:border-primary hover:text-foreground;
-    transition: all 0.15s ease;
-  }
-
-  /* Truncated text display */
-  .text-truncate-display {
-    @apply font-mono text-sm text-foreground/80;
-    @apply max-w-full overflow-hidden text-ellipsis whitespace-nowrap;
-  }
-}
-
-@layer utilities {
-  /* Yellow accent underline */
-  .underline-accent {
-    text-decoration: underline;
-    text-decoration-color: hsl(var(--primary));
-    text-underline-offset: 4px;
-  }
-
-  /* Border accent */
-  .border-accent-strong {
-    border-color: hsl(var(--primary));
-  }
-
-  /* Glow effect for focus states */
-  .glow-accent {
-    box-shadow: var(--yellow-glow);
-  }
-
-  /* Loading transition animations */
-  .animate-slide-up-fast {
-    animation: slide-up-fast 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-
-  .animate-fade-in-delayed {
-    opacity: 0;
-    animation: fade-in-simple 0.4s ease-out 0.3s forwards;
-  }
-
-  .animate-pulse-stagger {
-    animation: pulse-box 1s ease-in-out infinite;
-  }
-
-  .animate-scroll-up {
-    animation: scroll-up 4s linear infinite;
-  }
-
-  @keyframes slide-up-fast {
-    from {
-      transform: translateY(40vh);
-      opacity: 0.8;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes fade-in-simple {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes pulse-box {
-    0%, 100% {
-      opacity: 0.3;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.2);
-    }
-  }
-
-  @keyframes scroll-up {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(-50%);
-    }
+  .data-card-accent {
+    @apply bg-card border-l-2 border-l-primary border-y border-r border-border p-4;
   }
 }

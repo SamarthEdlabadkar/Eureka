@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import ConstraintSection from "./ConstraintSection";
 
 interface ConstraintsViewProps {
@@ -39,8 +40,13 @@ const CONSTRAINT_SECTIONS = [
 ];
 
 const ConstraintsView = ({ userPrompt, onBack }: ConstraintsViewProps) => {
+  const navigate = useNavigate();
   const [constraints, setConstraints] = useState("");
   const [completedPoints, setCompletedPoints] = useState<Set<string>>(new Set());
+
+  // Calculate total number of points across all sections
+  const totalPoints = CONSTRAINT_SECTIONS.reduce((sum, section) => sum + section.points.length, 0);
+  const allPointsCompleted = completedPoints.size === totalPoints;
 
   const handleTogglePoint = (pointId: string) => {
     setCompletedPoints(prev => {
@@ -60,6 +66,11 @@ const ConstraintsView = ({ userPrompt, onBack }: ConstraintsViewProps) => {
       console.log("Submitted constraints:", constraints);
       alert("Constraints submitted! (Demo mode - no backend processing)");
     }
+  };
+
+  const handleGeneratePlan = () => {
+    // Navigate to the plan view page
+    navigate("/plan");
   };
 
   return (
@@ -111,32 +122,51 @@ const ConstraintsView = ({ userPrompt, onBack }: ConstraintsViewProps) => {
         </div>
       </main>
 
-      {/* Bottom Bar - Sticky Input */}
+      {/* Bottom Bar - Sticky Input or Generate Plan Button */}
       <footer className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-sm">
         <div className="container max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={constraints}
-                onChange={(e) => setConstraints(e.target.value)}
-                placeholder="Enter your constraints and specific requirements here..."
-                className="input-industrial w-full h-12 px-4 rounded-sm"
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              />
+          {allPointsCompleted ? (
+            // Show "Generate Plan" button when all points are completed
+            <div className="flex flex-col items-center gap-3">
+              <Button
+                variant="default"
+                size="lg"
+                onClick={handleGeneratePlan}
+                className="px-12 py-6 text-lg bg-green-600 hover:bg-green-700"
+              >
+                Generate Plan
+              </Button>
+              <div className="font-mono text-xs text-muted-foreground">
+                All constraints reviewed • Ready to generate implementation plan
+              </div>
             </div>
-            <Button
-              variant="industrial"
-              size="lg"
-              onClick={handleSubmit}
-              disabled={!constraints.trim()}
-            >
-              Submit
-            </Button>
-          </div>
-          <div className="font-mono text-xs text-muted-foreground mt-2">
-            Press Enter to submit • Be specific about technical requirements
-          </div>
+          ) : (
+            // Show input and submit button when not all points are completed
+            <>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={constraints}
+                    onChange={(e) => setConstraints(e.target.value)}
+                    placeholder="Enter your constraints and specific requirements here..."
+                    className="input-industrial w-full h-12 px-4 rounded-sm"
+                    onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  />
+                </div>
+                <Button
+                  size="lg"
+                  onClick={handleSubmit}
+                  disabled={!constraints.trim()}
+                >
+                  Submit
+                </Button>
+              </div>
+              <div className="font-mono text-xs text-muted-foreground mt-2">
+                Press Enter to submit • Be specific about technical requirements • {completedPoints.size}/{totalPoints} points reviewed
+              </div>
+            </>
+          )}
         </div>
       </footer>
     </div>

@@ -1,12 +1,14 @@
-import { useState } from "react";
-import InputView from "@/components/InputView";
-import ConstraintsView from "@/components/ConstraintsView";
-import LoadingTransition from "@/components/LoadingTransition";
+import { useState, useCallback } from "react";
+import IntakeView from "@/components/IntakeView";
+import LoadingView from "@/components/LoadingView";
+import RefinerView from "@/components/RefinerView";
+import PlanReviewView from "@/components/PlanReviewView";
+import SuccessView from "@/components/SuccessView";
 
-type ViewState = "input" | "loading" | "constraints";
+type View = "intake" | "loading" | "refiner" | "planReview" | "success";
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<ViewState>("input");
+  const [currentView, setCurrentView] = useState<View>("intake");
   const [userPrompt, setUserPrompt] = useState("");
 
   const handleAnalyze = (prompt: string) => {
@@ -14,24 +16,51 @@ const Index = () => {
     setCurrentView("loading");
   };
 
-  const handleLoadingComplete = () => {
-    setCurrentView("constraints");
+  const handleLoadingComplete = useCallback(() => {
+    setCurrentView("refiner");
+  }, []);
+
+  const handleGeneratePlan = () => {
+    setCurrentView("planReview");
   };
 
-  const handleBack = () => {
-    setCurrentView("input");
+  const handleAcceptPlan = () => {
+    setCurrentView("success");
+  };
+
+  const handleHome = () => {
+    setCurrentView("intake");
+    setUserPrompt("");
+  };
+
+  const handleBackToRefiner = () => {
+    setCurrentView("refiner");
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {currentView === "input" && (
-        <InputView onAnalyze={handleAnalyze} />
+      {currentView === "intake" && (
+        <IntakeView onAnalyze={handleAnalyze} />
       )}
       {currentView === "loading" && (
-        <LoadingTransition userPrompt={userPrompt} onComplete={handleLoadingComplete} />
+        <LoadingView onComplete={handleLoadingComplete} onHome={handleHome} />
       )}
-      {currentView === "constraints" && (
-        <ConstraintsView userPrompt={userPrompt} onBack={handleBack} />
+      {currentView === "refiner" && (
+        <RefinerView 
+          userPrompt={userPrompt} 
+          onHome={handleHome}
+          onGeneratePlan={handleGeneratePlan}
+        />
+      )}
+      {currentView === "planReview" && (
+        <PlanReviewView 
+          onAccept={handleAcceptPlan}
+          onHome={handleHome}
+          onBack={handleBackToRefiner}
+        />
+      )}
+      {currentView === "success" && (
+        <SuccessView onHome={handleHome} />
       )}
     </div>
   );
