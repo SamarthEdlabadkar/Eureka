@@ -75,20 +75,25 @@ def refine():
         groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         client = instructor.from_groq(groq_client)
 
-        # Prompt for structured analysis with exactly 3 categories
-        prompt = f"""Act as a Technical Systems Consultant and VC Strategist with a focus on failure analysis. 
+        # Prompt aligned to Pydantic models in models.RefinementResult/Category/CriticalQuestion
+        prompt = f"""
+        Act as a Technical Systems Consultant and VC Strategist with a focus on failure analysis. 
         Your mission is to help me "pre-mortem" this idea: {topic}. 
         Instead of giving me a report, I want you to poke holes in it by asking me sharp, informal, and probing questions. 
-        Focus heavily on the technical "how" and the logistical "why." 
-        Think like a co-founder trying to find the hidden technical debt, scaling bottlenecks, and logistical nightmares before we write a single line of code. 
+        Focus heavily on the technical "how" and the logistical "why." Think like a co-founder trying to find the hidden technical debt, scaling bottlenecks, and logistical nightmares before we write a single line of code. 
         Ask me about the messy stuff: edge cases in user behavior, hardware/software friction, supply chain or API dependencies, and how this breaks when we go from 1 to 1,000 users. 
         Keep it supportive and curious, but don't let me off the hook—force me to think through the unsexy, operational realities of making this work.
-        
-        IMPORTANT: You must provide exactly 3 categories, each with 2-3 critical questions that need to be answered."""
+        """
 
         # Call Groq with Instructor for structured output
+        # Pull model from environment (.env) with a sensible default
+        groq_model = os.getenv(
+            "GROQ_MODEL",
+            "meta-llama/llama-4-scout-17b-16e-instruct",
+        )
+
         result = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",  # You can change this to other Groq models
+            model=groq_model,
             messages=[{"role": "user", "content": prompt}],
             response_model=RefinementResult,
             max_tokens=2000,

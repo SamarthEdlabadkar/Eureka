@@ -7,16 +7,25 @@ from pydantic import BaseModel, Field
 
 
 class CriticalQuestion(BaseModel):
-    question: str = Field(max_length=200)
+    question: str = Field(
+        max_length=200,
+        description="Single critical question, max 200 characters",
+    )
 
 
 class Category(BaseModel):
-    name: str
-    questions: List[CriticalQuestion] = Field(min_length=2, max_length=3)
+    name: str = Field(description="Concise category name")
+    questions: List[CriticalQuestion] = Field(
+        max_length=3,
+        description="List of 2-3 critical questions for this category",
+    )
 
 
 class RefinementResult(BaseModel):
-    categories: List[Category] = Field(min_length=3, max_length=3)
+    categories: List[Category] = Field(
+        max_length=3,
+        description="Exactly 3 categories capturing critical questions",
+    )
 
 
 # LangGraph Agent Models

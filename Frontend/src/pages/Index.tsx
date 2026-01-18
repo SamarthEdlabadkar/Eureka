@@ -7,12 +7,18 @@ import SuccessView from "@/components/SuccessView";
 
 type View = "intake" | "loading" | "refiner" | "planReview" | "success";
 
+type CriticalQuestion = { question: string };
+type Category = { name: string; questions: CriticalQuestion[] };
+type RefinementResult = { categories: Category[] };
+
 const Index = () => {
   const [currentView, setCurrentView] = useState<View>("intake");
   const [userPrompt, setUserPrompt] = useState("");
+  const [refineResult, setRefineResult] = useState<RefinementResult | null>(null);
 
-  const handleAnalyze = (prompt: string) => {
+  const handleAnalyze = (prompt: string, result: RefinementResult | null) => {
     setUserPrompt(prompt);
+    setRefineResult(result);
     setCurrentView("loading");
   };
 
@@ -31,6 +37,7 @@ const Index = () => {
   const handleHome = () => {
     setCurrentView("intake");
     setUserPrompt("");
+    setRefineResult(null);
   };
 
   const handleBackToRefiner = () => {
@@ -48,6 +55,7 @@ const Index = () => {
       {currentView === "refiner" && (
         <RefinerView 
           userPrompt={userPrompt} 
+          refineResult={refineResult}
           onHome={handleHome}
           onGeneratePlan={handleGeneratePlan}
         />

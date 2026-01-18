@@ -9,7 +9,7 @@ from langchain_groq import ChatGroq
 from pydantic import BaseModel, SecretStr, Field
 import os
 
-import backend.tracing as tracing  # noqa: F401
+import tracing
 
 from models import MasterPromptOutput, StrategicRoadmapOutput, StrategicPhase
 
