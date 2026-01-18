@@ -14,7 +14,7 @@ from groq import Groq
 import instructor
 
 from models import RefinementResult
-from agents import run_agents
+from backend.refinement_agents import run_agents
 
 # Load environment variables from .env if present
 load_dotenv()
