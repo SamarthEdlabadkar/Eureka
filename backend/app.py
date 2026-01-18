@@ -13,6 +13,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from groq import Groq
 import instructor
+from livekit import api
 
 from models import RefinementResult
 from refinement_agents import run_agents
@@ -349,6 +350,66 @@ def method_not_allowed(error):
 def internal_error(error):
     """Handle 500 errors"""
     return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+@app.route("/api/livekit-token", methods=["POST"])
+def get_livekit_token():
+    """
+    Generate LiveKit access token for frontend connection
+
+    Expected JSON payload:
+    {
+        "roomName": "string - Room to join",
+        "identity": "string - User identity"
+    }
+
+    Returns:
+    {
+        "token": "string - JWT token",
+        "url": "string - LiveKit server URL"
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        room_name = data.get("roomName")
+        identity = data.get("identity")
+
+        if not room_name or not identity:
+            return jsonify({"error": "Missing roomName or identity"}), 400
+
+        # Get LiveKit credentials from environment
+        api_key = os.getenv("LIVEKIT_API_KEY")
+        api_secret = os.getenv("LIVEKIT_API_SECRET")
+        livekit_url = os.getenv(
+            "LIVEKIT_URL", ""
+        )
+
+        if not api_key or not api_secret:
+            return jsonify({"error": "LiveKit credentials not configured"}), 500
+
+        # Create access token
+        token = api.AccessToken(api_key, api_secret)
+        token.with_identity(identity).with_name(identity).with_grants(
+            api.VideoGrants(
+                room_join=True,
+                room=room_name,
+                can_publish=True,
+                can_subscribe=True,
+                can_publish_data=True,
+            )
+        )
+
+        jwt_token = token.to_jwt()
+
+        return jsonify({"token": jwt_token, "url": livekit_url}), 200
+
+    except Exception as e:
+        print(f"Error generating LiveKit token: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
