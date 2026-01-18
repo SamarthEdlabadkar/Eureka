@@ -9,6 +9,8 @@ from langchain_groq import ChatGroq
 from pydantic import BaseModel, SecretStr, Field
 import os
 
+import backend.tracing as tracing  # noqa: F401
+
 from models import MasterPromptOutput, StrategicRoadmapOutput, StrategicPhase
 
 
@@ -128,7 +130,7 @@ Please transform this into a comprehensive structured master prompt for a Planni
     else:
         master_prompt: MasterPromptOutput = response  # type: ignore
         response_dict = response.model_dump()
-    
+
     state["master_prompt"] = master_prompt
     state["messages"] = state.get("messages", []) + [
         {"agent": "strategist", "content": response_dict}
@@ -169,7 +171,7 @@ Please create a high-level strategic roadmap based on this master prompt."""
     else:
         strategic_roadmap: StrategicRoadmapOutput = response  # type: ignore
         response_dict = response.model_dump()
-    
+
     state["strategic_roadmap"] = strategic_roadmap
     state["messages"] = state.get("messages", []) + [
         {"agent": "project_overview_planner", "content": response_dict}
