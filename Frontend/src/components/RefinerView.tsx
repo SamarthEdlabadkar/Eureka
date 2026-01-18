@@ -261,12 +261,13 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
           </p>
         </div>
 
+
         {/* 3-Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex flex-wrap justify-center gap-6">
           {sections.map((section) => (
             <div
               key={section.id}
-              className="border border-border bg-card p-4 space-y-4 transition-all duration-300 hover:border-primary/50"
+              className="border border-border bg-card p-4 space-y-4 transition-all duration-300 hover:border-primary/50 w-full md:w-[calc(33.333%-1rem)] md:max-w-[400px]"
             >
               {/* Section Header */}
               <div className="flex items-center gap-2 border-b border-border pb-3">
