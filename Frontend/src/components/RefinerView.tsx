@@ -14,7 +14,7 @@ interface RefinerViewProps {
   userPrompt: string;
   refineResult: RefinementResult | null;
   onHome: () => void;
-  onGeneratePlan: () => void;
+  onGeneratePlan: (planData: any) => void;
 }
 
 interface ConstraintPoint {
@@ -112,6 +112,7 @@ const initialSections: Section[] = [
 const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: RefinerViewProps) => {
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [constraints, setConstraints] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const {
     isListening,
@@ -221,12 +222,67 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
 
   const handleSubmit = () => {
     if (constraints.trim()) {
-      console.log("Submitted constraints:", constraints);
+      let delay = 0;
+      const delayIncrement = 300; // milliseconds between each point
+
+      sections.forEach((section) => {
+        section.points.forEach((point) => {
+          if (!point.dismissed) {
+            setTimeout(() => {
+              setSections((prev) =>
+                prev.map((s) =>
+                  s.id === section.id
+                    ? {
+                      ...s,
+                      points: s.points.map((p) =>
+                        p.id === point.id ? { ...p, reviewed: true } : p
+                      ),
+                    }
+                    : s
+                )
+              );
+            }, delay);
+            delay += delayIncrement;
+          }
+        });
+      });
+
+      // Clear input after all animations complete
+      setTimeout(() => {
+        setConstraints("");
+      }, delay);
     }
   };
 
-  const handleGeneratePlan = () => {
-    onGeneratePlan();
+  const handleGeneratePlan = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/agents/plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: userPrompt,
+          user_idea: userPrompt,
+          constraints: constraints,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate plan");
+      }
+
+      const data = await response.json();
+
+      if (data.success || data.result) {
+        onGeneratePlan(data.result || data);
+      }
+    } catch (error) {
+      console.error("Error generating plan:", error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const truncatedPrompt = userPrompt.length > 100
@@ -285,26 +341,22 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
                   <div
                     key={point.id}
                     className={`relative w-full text-left p-3 border-y border-r transition-all duration-300 group ${point.dismissed
-                        ? "border-muted/30 bg-muted/10 border-l-2 border-l-muted-foreground/30 opacity-60"
-                        : point.reviewed
-                          ? "border-green-500/30 bg-green-500/5 hover:border-green-400/50 hover:bg-green-500/10 border-l-2 border-l-green-500"
-                          : "border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 hover:shadow-[0_0_12px_rgba(234,179,8,0.15)] border-l-2 border-l-red-500"
+                      ? "border-muted/30 bg-muted/10 border-l-2 border-l-muted-foreground/30 opacity-60"
+                      : point.reviewed
+                        ? "border-green-500/30 bg-green-500/5 hover:border-green-400/50 hover:bg-green-500/10 border-l-2 border-l-green-500"
+                        : "border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 hover:shadow-[0_0_12px_rgba(234,179,8,0.15)] border-l-2 border-l-red-500"
                       }`}
                   >
-                    <button
-                      onClick={() => !point.dismissed && togglePoint(section.id, point.id)}
-                      className="w-full text-left"
-                      disabled={point.dismissed}
-                    >
+                    <div className="w-full text-left">
                       <div className="flex items-start gap-3 pr-8">
                         {/* Status indicator */}
                         <div className="flex items-center gap-2 shrink-0 pt-0.5">
                           <div
                             className={`w-2 h-2 rounded-full transition-colors ${point.dismissed
-                                ? "bg-muted-foreground/30"
-                                : point.reviewed
-                                  ? "bg-green-500"
-                                  : "bg-red-500"
+                              ? "bg-muted-foreground/30"
+                              : point.reviewed
+                                ? "bg-green-500"
+                                : "bg-red-500"
                               }`}
                           />
                           <span className={`font-mono text-xs ${point.dismissed ? "text-muted-foreground/50" : "text-muted-foreground"}`}>
@@ -313,13 +365,13 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
                         </div>
                         {/* Point text */}
                         <p className={`text-sm leading-relaxed ${point.dismissed
-                            ? "text-muted-foreground/50 line-through decoration-muted-foreground/50"
-                            : "text-muted-foreground"
+                          ? "text-muted-foreground/50 line-through decoration-muted-foreground/50"
+                          : "text-muted-foreground"
                           }`}>
                           {point.text}
                         </p>
                       </div>
-                    </button>
+                    </div>
                     {/* Dismiss/Restore button */}
                     {point.dismissed ? (
                       <button
@@ -354,10 +406,11 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
             <div className="space-y-3">
               <Button
                 onClick={handleGeneratePlan}
+                disabled={isGenerating}
                 size="lg"
                 className="w-full py-6 text-lg font-bold uppercase tracking-wider"
               >
-                Generate Plan →
+                {isGenerating ? "Generating..." : "Generate Plan →"}
               </Button>
               <div className="text-center font-mono text-xs text-primary">
                 ✓ All {totalPoints} constraints reviewed • Ready to generate
@@ -409,6 +462,26 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
           )}
         </div>
       </footer>
+
+      {/* Generating Overlay */}
+      {isGenerating && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-2">
+              <span className="font-mono text-2xl text-primary animate-pulse">[</span>
+              <span className="inline-block w-64 overflow-hidden">
+                <span className="animate-[slide-loader_1.5s_steps(20)_infinite] inline-block font-mono text-primary">
+                  ████████████████████
+                </span>
+              </span>
+              <span className="font-mono text-2xl text-primary animate-pulse">]</span>
+            </div>
+            <div className="font-mono text-lg text-primary tracking-widest">
+              GENERATING_PLAN<span className="animate-blink">_</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -8,22 +8,26 @@ from pydantic import BaseModel, Field
 
 class CriticalQuestion(BaseModel):
     question: str = Field(
+        description="A single critical question, phrased as a question (end with ?), max 200 characters",
         max_length=200,
-        description="Single critical question, max 200 characters",
     )
 
 
 class Category(BaseModel):
-    name: str = Field(description="Concise category name")
+    name: str = Field(
+        description="Concise category name (3-5 words max)", 
+        max_length=50
+    )
     questions: List[CriticalQuestion] = Field(
+        description="Exactly 2-3 critical questions for this category",
+        min_length=2,
         max_length=3,
-        description="List of 2-3 critical questions for this category",
     )
 
 
 class RefinementResult(BaseModel):
     categories: List[Category] = Field(
-        max_length=3,
+        # max_length=5,
         description="Exactly 3 categories capturing critical questions",
     )
 
