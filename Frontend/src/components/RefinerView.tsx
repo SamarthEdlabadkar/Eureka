@@ -6,8 +6,13 @@ import VoiceMicButton from "@/components/VoiceMicButton";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { X, RotateCcw } from "lucide-react";
 
+type CriticalQuestion = { question: string };
+type Category = { name: string; questions: CriticalQuestion[] };
+type RefinementResult = { categories: Category[] };
+
 interface RefinerViewProps {
   userPrompt: string;
+  refineResult: RefinementResult | null;
   onHome: () => void;
   onGeneratePlan: () => void;
 }
@@ -104,17 +109,17 @@ const initialSections: Section[] = [
   },
 ];
 
-const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) => {
+const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: RefinerViewProps) => {
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [constraints, setConstraints] = useState("");
-  
-  const { 
-    isListening, 
-    status, 
-    transcription, 
-    audioLevels, 
+
+  const {
+    isListening,
+    status,
+    transcription,
+    audioLevels,
     toggleListening,
-    stopListening 
+    stopListening
   } = useVoiceInput({
     simulatedText: "PostgreSQL with Redis caching, OAuth2 with Google and GitHub...",
     onTranscriptionComplete: (text) => {
@@ -129,18 +134,41 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
     }
   }, [transcription, isListening]);
 
+  // When refineResult arrives, map it into the section/point structure so it uses the same styling
+  useEffect(() => {
+    if (refineResult?.categories?.length) {
+      const mapped: Section[] = refineResult.categories.map((cat, idx) => {
+        const code = `SEC_${String.fromCharCode(65 + idx)}`;
+        return {
+          id: String(idx),
+          title: cat.name,
+          code,
+          points: cat.questions.map((q, qIdx) => ({
+            id: `${idx}-${qIdx}`,
+            text: q.question,
+            reviewed: false,
+            dismissed: false,
+          })),
+        };
+      });
+      setSections(mapped);
+    } else {
+      setSections(initialSections);
+    }
+  }, [refineResult]);
+
   const togglePoint = (sectionId: string, pointId: string) => {
     setSections((prev) =>
       prev.map((section) =>
         section.id === sectionId
           ? {
-              ...section,
-              points: section.points.map((point) =>
-                point.id === pointId
-                  ? { ...point, reviewed: !point.reviewed }
-                  : point
-              ),
-            }
+            ...section,
+            points: section.points.map((point) =>
+              point.id === pointId
+                ? { ...point, reviewed: !point.reviewed }
+                : point
+            ),
+          }
           : section
       )
     );
@@ -152,13 +180,13 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
       prev.map((section) =>
         section.id === sectionId
           ? {
-              ...section,
-              points: section.points.map((point) =>
-                point.id === pointId
-                  ? { ...point, dismissed: true, reviewed: true }
-                  : point
-              ),
-            }
+            ...section,
+            points: section.points.map((point) =>
+              point.id === pointId
+                ? { ...point, dismissed: true, reviewed: true }
+                : point
+            ),
+          }
           : section
       )
     );
@@ -170,13 +198,13 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
       prev.map((section) =>
         section.id === sectionId
           ? {
-              ...section,
-              points: section.points.map((point) =>
-                point.id === pointId
-                  ? { ...point, dismissed: false, reviewed: false }
-                  : point
-              ),
-            }
+            ...section,
+            points: section.points.map((point) =>
+              point.id === pointId
+                ? { ...point, dismissed: false, reviewed: false }
+                : point
+            ),
+          }
           : section
       )
     );
@@ -201,8 +229,8 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
     onGeneratePlan();
   };
 
-  const truncatedPrompt = userPrompt.length > 100 
-    ? userPrompt.slice(0, 100) + "..." 
+  const truncatedPrompt = userPrompt.length > 100
+    ? userPrompt.slice(0, 100) + "..."
     : userPrompt;
 
   return (
@@ -233,12 +261,13 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
           </p>
         </div>
 
+
         {/* 3-Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex flex-wrap justify-center gap-6">
           {sections.map((section) => (
             <div
               key={section.id}
-              className="border border-border bg-card p-4 space-y-4 transition-all duration-300 hover:border-primary/50"
+              className="border border-border bg-card p-4 space-y-4 transition-all duration-300 hover:border-primary/50 w-full md:w-[calc(33.333%-1rem)] md:max-w-[400px]"
             >
               {/* Section Header */}
               <div className="flex items-center gap-2 border-b border-border pb-3">
@@ -255,13 +284,12 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
                 {section.points.map((point, index) => (
                   <div
                     key={point.id}
-                    className={`relative w-full text-left p-3 border-y border-r transition-all duration-300 group ${
-                      point.dismissed
+                    className={`relative w-full text-left p-3 border-y border-r transition-all duration-300 group ${point.dismissed
                         ? "border-muted/30 bg-muted/10 border-l-2 border-l-muted-foreground/30 opacity-60"
                         : point.reviewed
-                        ? "border-green-500/30 bg-green-500/5 hover:border-green-400/50 hover:bg-green-500/10 border-l-2 border-l-green-500"
-                        : "border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 hover:shadow-[0_0_12px_rgba(234,179,8,0.15)] border-l-2 border-l-red-500"
-                    }`}
+                          ? "border-green-500/30 bg-green-500/5 hover:border-green-400/50 hover:bg-green-500/10 border-l-2 border-l-green-500"
+                          : "border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 hover:shadow-[0_0_12px_rgba(234,179,8,0.15)] border-l-2 border-l-red-500"
+                      }`}
                   >
                     <button
                       onClick={() => !point.dismissed && togglePoint(section.id, point.id)}
@@ -272,24 +300,22 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
                         {/* Status indicator */}
                         <div className="flex items-center gap-2 shrink-0 pt-0.5">
                           <div
-                            className={`w-2 h-2 rounded-full transition-colors ${
-                              point.dismissed
+                            className={`w-2 h-2 rounded-full transition-colors ${point.dismissed
                                 ? "bg-muted-foreground/30"
                                 : point.reviewed
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
+                                  ? "bg-green-500"
+                                  : "bg-red-500"
+                              }`}
                           />
                           <span className={`font-mono text-xs ${point.dismissed ? "text-muted-foreground/50" : "text-muted-foreground"}`}>
                             {String(index + 1).padStart(2, "0")}.
                           </span>
                         </div>
                         {/* Point text */}
-                        <p className={`text-sm leading-relaxed ${
-                          point.dismissed 
-                            ? "text-muted-foreground/50 line-through decoration-muted-foreground/50" 
+                        <p className={`text-sm leading-relaxed ${point.dismissed
+                            ? "text-muted-foreground/50 line-through decoration-muted-foreground/50"
                             : "text-muted-foreground"
-                        }`}>
+                          }`}>
                           {point.text}
                         </p>
                       </div>

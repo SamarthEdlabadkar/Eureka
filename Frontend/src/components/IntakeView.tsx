@@ -4,46 +4,81 @@ import { Textarea } from "@/components/ui/textarea";
 import HomeButton from "@/components/HomeButton";
 import VoiceMicButton from "@/components/VoiceMicButton";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { useToast } from "@/hooks/use-toast";
+
+type CriticalQuestion = { question: string };
+type Category = { name: string; questions: CriticalQuestion[] };
+type RefinementResult = { categories: Category[] };
 
 interface IntakeViewProps {
-  onAnalyze: (prompt: string) => void;
+  onAnalyze: (prompt: string, refineResult: RefinementResult | null) => void;
 }
 
 const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
   const [prompt, setPrompt] = useState("");
-  
-  const { 
-    isListening, 
-    status, 
-    transcription, 
-    audioLevels, 
-    toggleListening 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const {
+    isListening,
+    status,
+    transcription,
+    audioLevels,
+    toggleListening,
   } = useVoiceInput({
-    onTranscriptionComplete: (text) => {
-      setPrompt(text);
-    }
+    onTranscriptionComplete: (text) => setPrompt(text),
   });
 
-  // Sync transcription to prompt as it types
   useEffect(() => {
     if (transcription && isListening) {
       setPrompt(transcription);
     }
   }, [transcription, isListening]);
 
-  const handleSubmit = () => {
-    if (prompt.trim()) {
-      onAnalyze(prompt.trim());
+  const handleSubmit = async () => {
+    const trimmed = prompt.trim();
+    if (!trimmed) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/refine", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic: trimmed }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const refineResult: RefinementResult | null = data.result ?? null;
+        onAnalyze(trimmed, refineResult);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.error || "Failed to analyze the prompt",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Connection Error",
+        description: "Could not connect to the backend server",
+      });
+      console.error("API Error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header with Home */}
       <header className="border-b border-border bg-background sticky top-0 z-10">
         <div className="container max-w-3xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
-            <HomeButton onClick={() => {}} />
+            <HomeButton onClick={() => { }} />
             <div className="border-l border-border pl-4 flex items-center gap-2 font-mono text-xs text-primary">
               <span className="w-2 h-2 bg-primary" />
               <span>CONCEPT_GEN</span>
@@ -52,10 +87,8 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-3xl space-y-8">
-          {/* Header */}
           <div className="space-y-4 text-center">
             <div className="font-mono text-xs text-muted-foreground tracking-widest uppercase">
               [ Concept Generator ]
@@ -69,7 +102,6 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
             </p>
           </div>
 
-          {/* Input Area */}
           <div className="space-y-4">
             <div className="flex gap-2 items-start">
               <div className="industrial-border-accent bg-card p-1 flex-1">
@@ -81,8 +113,7 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
                   disabled={isListening}
                 />
               </div>
-              
-              {/* Microphone Button */}
+
               <VoiceMicButton
                 isListening={isListening}
                 status={status}
@@ -92,41 +123,36 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
               />
             </div>
 
-            {/* Character count & Status */}
             <div className="flex justify-between items-center">
               <span className="font-mono text-xs text-muted-foreground">
                 {prompt.length} characters
               </span>
               <span className="font-mono text-xs text-muted-foreground">
-                STATUS: {isListening 
-                  ? status.toUpperCase() 
-                  : prompt.length > 20 
-                    ? "READY" 
-                    : "AWAITING INPUT"
-                }
+                STATUS: {isListening
+                  ? status.toUpperCase()
+                  : prompt.length > 20
+                    ? "READY"
+                    : "AWAITING INPUT"}
               </span>
             </div>
           </div>
 
-          {/* Action Button */}
           <div className="flex justify-center">
             <Button
               onClick={handleSubmit}
-              disabled={prompt.trim().length < 10 || isListening}
+              disabled={prompt.trim().length < 10 || isListening || isSubmitting}
               size="lg"
               className="px-12 py-6 text-lg font-bold uppercase tracking-wider disabled:opacity-30"
             >
-              Analyze →
+              {isSubmitting ? "Analyzing..." : "Analyze →"}
             </Button>
           </div>
 
-          {/* Footer hint */}
           <div className="text-center">
             <p className="font-mono text-xs text-muted-foreground/60">
-              {isListening 
-                ? "Click microphone to stop recording" 
-                : "Press analyze to generate constraint specifications • Click mic for voice input"
-              }
+              {isListening
+                ? "Click microphone to stop recording"
+                : "Press analyze to generate constraint specifications • Click mic for voice input"}
             </p>
           </div>
         </div>
