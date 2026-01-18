@@ -1,7 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import HomeButton from "@/components/HomeButton";
+import VoiceMicButton from "@/components/VoiceMicButton";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { X, RotateCcw } from "lucide-react";
 
 interface RefinerViewProps {
@@ -105,6 +107,27 @@ const initialSections: Section[] = [
 const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) => {
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [constraints, setConstraints] = useState("");
+  
+  const { 
+    isListening, 
+    status, 
+    transcription, 
+    audioLevels, 
+    toggleListening,
+    stopListening 
+  } = useVoiceInput({
+    simulatedText: "PostgreSQL with Redis caching, OAuth2 with Google and GitHub...",
+    onTranscriptionComplete: (text) => {
+      setConstraints(text);
+    }
+  });
+
+  // Sync transcription to input as it types
+  useEffect(() => {
+    if (transcription && isListening) {
+      setConstraints(transcription);
+    }
+  }, [transcription, isListening]);
 
   const togglePoint = (sectionId: string, pointId: string) => {
     setSections((prev) =>
@@ -317,13 +340,14 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
           ) : (
             /* Input + Submit - shown when points still need review */
             <>
-              <div className="flex gap-4">
+              <div className="flex gap-2 items-center">
                 <div className="flex-1 border border-border bg-card">
                   <Input
                     value={constraints}
                     onChange={(e) => setConstraints(e.target.value)}
                     placeholder="Enter your constraints and specific requirements here..."
                     className="bg-background border-0 font-mono text-sm placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 h-12"
+                    disabled={isListening}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && constraints.trim()) {
                         handleSubmit();
@@ -331,6 +355,13 @@ const RefinerView = ({ userPrompt, onHome, onGeneratePlan }: RefinerViewProps) =
                     }}
                   />
                 </div>
+                <VoiceMicButton
+                  isListening={isListening}
+                  status={status}
+                  audioLevels={audioLevels}
+                  onToggle={toggleListening}
+                  className="shrink-0"
+                />
                 <Button
                   onClick={handleSubmit}
                   disabled={constraints.trim().length === 0}

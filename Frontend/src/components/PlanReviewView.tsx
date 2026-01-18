@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import HomeButton from "@/components/HomeButton";
+import VoiceMicButton from "@/components/VoiceMicButton";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 
 interface PlanReviewViewProps {
   onAccept: () => void;
@@ -94,6 +96,34 @@ services:
 const PlanReviewView = ({ onAccept, onHome, onBack }: PlanReviewViewProps) => {
   const [state, setState] = useState<ReviewState>("decision");
   const [feedback, setFeedback] = useState("");
+  
+  const { 
+    isListening, 
+    status, 
+    transcription, 
+    audioLevels, 
+    toggleListening,
+    stopListening 
+  } = useVoiceInput({
+    simulatedText: "Add GraphQL support and increase rate limits to 1000 req/min...",
+    onTranscriptionComplete: (text) => {
+      setFeedback(text);
+    }
+  });
+
+  // Sync transcription to feedback as it types
+  useEffect(() => {
+    if (transcription && isListening) {
+      setFeedback(transcription);
+    }
+  }, [transcription, isListening]);
+
+  // Stop listening when leaving feedback mode
+  useEffect(() => {
+    if (state !== "feedback" && isListening) {
+      stopListening();
+    }
+  }, [state, isListening, stopListening]);
 
   useEffect(() => {
     if (state === "processing") {
@@ -236,13 +266,14 @@ const PlanReviewView = ({ onAccept, onHome, onBack }: PlanReviewViewProps) => {
           {state === "feedback" && (
             /* State 2: Feedback Input */
             <div className="space-y-3">
-              <div className="flex gap-4">
+              <div className="flex gap-2 items-center">
                 <div className="flex-1 bg-muted/50 border border-border">
                   <Input
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     placeholder="Enter modification requirements..."
                     className="bg-transparent border-0 font-mono text-sm placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0 h-12"
+                    disabled={isListening}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && feedback.trim()) {
                         handleSubmitFeedback();
@@ -251,9 +282,16 @@ const PlanReviewView = ({ onAccept, onHome, onBack }: PlanReviewViewProps) => {
                         handleCancelFeedback();
                       }
                     }}
-                    autoFocus
+                    autoFocus={!isListening}
                   />
                 </div>
+                <VoiceMicButton
+                  isListening={isListening}
+                  status={status}
+                  audioLevels={audioLevels}
+                  onToggle={toggleListening}
+                  className="shrink-0"
+                />
                 <Button
                   onClick={handleSubmitFeedback}
                   disabled={feedback.trim().length === 0}
