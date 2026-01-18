@@ -13,8 +13,6 @@ import instructor
 
 from models import RefinementResult
 
-# from refinement_crew.crew import RefinementCrew
-
 # Load environment variables from .env if present
 load_dotenv()
 
@@ -45,8 +43,8 @@ def refine():
             "categories": [
                 {
                     "name": "Category Name",
-                    "flaws": [
-                        {"title": "Flaw Title", "description": "Flaw Description"},
+                    "questions": [
+                        {"question": "Critical question to answer"},
                         ...
                     ]
                 },
@@ -76,12 +74,16 @@ def refine():
         groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         client = instructor.from_groq(groq_client)
 
-        # TODO: Replace this placeholder prompt with the actual prompt
-        prompt = f"""Act as a Strategic Product & Implementation Consultant with a background in failure analysis and venture capital due diligence. 
-        Your goal is to conduct a rigorous "pre-mortem" on the user's idea: {topic}. 
-        As a veteran systems thinker, you must look past the hype to identify critical vulnerabilities, execution gaps, and real-world friction points. 
-        Provide a brutally honest yet insightful critique that exposes where the idea might break, specifically analyzing technical debt, market fit, regulatory hurdles, and human behavior. 
-        Do not be mean, but be intellectually rigorous—your objective is to find the "hidden cracks" that others miss before they become fatal flaws."""
+        # Prompt for structured analysis with exactly 3 categories
+        prompt = f"""Act as a Technical Systems Consultant and VC Strategist with a focus on failure analysis. 
+        Your mission is to help me "pre-mortem" this idea: {topic}. 
+        Instead of giving me a report, I want you to poke holes in it by asking me sharp, informal, and probing questions. 
+        Focus heavily on the technical "how" and the logistical "why." 
+        Think like a co-founder trying to find the hidden technical debt, scaling bottlenecks, and logistical nightmares before we write a single line of code. 
+        Ask me about the messy stuff: edge cases in user behavior, hardware/software friction, supply chain or API dependencies, and how this breaks when we go from 1 to 1,000 users. 
+        Keep it supportive and curious, but don't let me off the hook—force me to think through the unsexy, operational realities of making this work.
+        
+        IMPORTANT: You must provide exactly 3 categories, each with 2-3 critical questions that need to be answered."""
 
         # Call Groq with Instructor for structured output
         result = client.chat.completions.create(
