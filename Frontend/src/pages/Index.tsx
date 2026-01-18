@@ -4,12 +4,9 @@ import LoadingView from "@/components/LoadingView";
 import RefinerView from "@/components/RefinerView";
 import PlanReviewView from "@/components/PlanReviewView";
 import SuccessView from "@/components/SuccessView";
+import { GraphView } from "@/components/graph/GraphView";
 
-type View = "intake" | "loading" | "refiner" | "planReview" | "success";
-
-type CriticalQuestion = { question: string };
-type Category = { name: string; questions: CriticalQuestion[] };
-type RefinementResult = { categories: Category[] };
+type View = "intake" | "loading" | "refiner" | "planReview" | "graph" | "success";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<View>("intake");
@@ -33,7 +30,7 @@ const Index = () => {
   };
 
   const handleAcceptPlan = () => {
-    setCurrentView("success");
+    setCurrentView("graph");
   };
 
   const handleHome = () => {
@@ -70,6 +67,9 @@ const Index = () => {
           onHome={handleHome}
           onBack={handleBackToRefiner}
         />
+      )}
+      {currentView === "graph" && (
+        <GraphView onHome={handleHome} />
       )}
       {currentView === "success" && (
         <SuccessView onHome={handleHome} />

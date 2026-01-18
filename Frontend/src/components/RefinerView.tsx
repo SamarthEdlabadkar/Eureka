@@ -14,7 +14,7 @@ interface RefinerViewProps {
   userPrompt: string;
   refineResult: RefinementResult | null;
   onHome: () => void;
-  onGeneratePlan: (planData: any) => void;
+  onGeneratePlan: () => void;
 }
 
 interface ConstraintPoint {
@@ -113,14 +113,14 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [constraints, setConstraints] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const {
-    isListening,
-    status,
-    transcription,
-    audioLevels,
+  
+  const { 
+    isListening, 
+    status, 
+    transcription, 
+    audioLevels, 
     toggleListening,
-    stopListening
+    stopListening 
   } = useVoiceInput({
     simulatedText: "PostgreSQL with Redis caching, OAuth2 with Google and GitHub...",
     onTranscriptionComplete: (text) => {
@@ -163,13 +163,13 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
       prev.map((section) =>
         section.id === sectionId
           ? {
-            ...section,
-            points: section.points.map((point) =>
-              point.id === pointId
-                ? { ...point, reviewed: !point.reviewed }
-                : point
-            ),
-          }
+              ...section,
+              points: section.points.map((point) =>
+                point.id === pointId
+                  ? { ...point, reviewed: !point.reviewed }
+                  : point
+              ),
+            }
           : section
       )
     );
@@ -181,13 +181,13 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
       prev.map((section) =>
         section.id === sectionId
           ? {
-            ...section,
-            points: section.points.map((point) =>
-              point.id === pointId
-                ? { ...point, dismissed: true, reviewed: true }
-                : point
-            ),
-          }
+              ...section,
+              points: section.points.map((point) =>
+                point.id === pointId
+                  ? { ...point, dismissed: true, reviewed: true }
+                  : point
+              ),
+            }
           : section
       )
     );
@@ -199,13 +199,13 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
       prev.map((section) =>
         section.id === sectionId
           ? {
-            ...section,
-            points: section.points.map((point) =>
-              point.id === pointId
-                ? { ...point, dismissed: false, reviewed: false }
-                : point
-            ),
-          }
+              ...section,
+              points: section.points.map((point) =>
+                point.id === pointId
+                  ? { ...point, dismissed: false, reviewed: false }
+                  : point
+              ),
+            }
           : section
       )
     );
@@ -285,8 +285,8 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
     }
   };
 
-  const truncatedPrompt = userPrompt.length > 100
-    ? userPrompt.slice(0, 100) + "..."
+  const truncatedPrompt = userPrompt.length > 100 
+    ? userPrompt.slice(0, 100) + "..." 
     : userPrompt;
 
   return (
@@ -341,11 +341,11 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
                   <div
                     key={point.id}
                     className={`relative w-full text-left p-3 border-y border-r transition-all duration-300 group ${point.dismissed
-                      ? "border-muted/30 bg-muted/10 border-l-2 border-l-muted-foreground/30 opacity-60"
-                      : point.reviewed
+                        ? "border-muted/30 bg-muted/10 border-l-2 border-l-muted-foreground/30 opacity-60"
+                        : point.reviewed
                         ? "border-green-500/30 bg-green-500/5 hover:border-green-400/50 hover:bg-green-500/10 border-l-2 border-l-green-500"
                         : "border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 hover:shadow-[0_0_12px_rgba(234,179,8,0.15)] border-l-2 border-l-red-500"
-                      }`}
+                    }`}
                   >
                     <div className="w-full text-left">
                       <div className="flex items-start gap-3 pr-8">
@@ -353,11 +353,11 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
                         <div className="flex items-center gap-2 shrink-0 pt-0.5">
                           <div
                             className={`w-2 h-2 rounded-full transition-colors ${point.dismissed
-                              ? "bg-muted-foreground/30"
-                              : point.reviewed
+                                ? "bg-muted-foreground/30"
+                                : point.reviewed
                                 ? "bg-green-500"
                                 : "bg-red-500"
-                              }`}
+                            }`}
                           />
                           <span className={`font-mono text-xs ${point.dismissed ? "text-muted-foreground/50" : "text-muted-foreground"}`}>
                             {String(index + 1).padStart(2, "0")}.
@@ -365,9 +365,9 @@ const RefinerView = ({ userPrompt, refineResult, onHome, onGeneratePlan }: Refin
                         </div>
                         {/* Point text */}
                         <p className={`text-sm leading-relaxed ${point.dismissed
-                          ? "text-muted-foreground/50 line-through decoration-muted-foreground/50"
-                          : "text-muted-foreground"
-                          }`}>
+                            ? "text-muted-foreground/50 line-through decoration-muted-foreground/50" 
+                            : "text-muted-foreground"
+                        }`}>
                           {point.text}
                         </p>
                       </div>
