@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import VoiceMicButton from "./VoiceMicButton";
+import { useLiveKit } from "@/hooks/useLiveKit";
 
 interface InputViewProps {
   onAnalyze: (prompt: string) => void;
@@ -7,6 +9,14 @@ interface InputViewProps {
 
 const InputView = ({ onAnalyze }: InputViewProps) => {
   const [prompt, setPrompt] = useState("");
+
+  const { isConnected, isRecording, toggleRecording, audioLevels } = useLiveKit({
+    url: import.meta.env.VITE_LIVEKIT_URL || "wss://your-livekit-project.livekit.cloud",
+    tokenEndpoint: "http://localhost:5000/api/token", // Adjust if backend is elsewhere
+    onTranscription: (text) => {
+        setPrompt(prev => prev + " " + text);
+    }
+  });
 
   const handleSubmit = () => {
     if (prompt.trim()) {
@@ -51,16 +61,23 @@ const InputView = ({ onAnalyze }: InputViewProps) => {
             className="input-industrial w-full h-48 p-4 resize-none rounded-sm"
             autoFocus
           />
-          <div className="font-mono text-xs text-muted-foreground mt-2 text-right">
-            {prompt.length} chars • ⌘+Enter to submit
+          <div className="font-mono text-xs text-muted-foreground mt-2 text-right flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <VoiceMicButton 
+                    isListening={isRecording} 
+                    status={isRecording ? "listening" : "idle"} 
+                    audioLevels={audioLevels} 
+                    onToggle={toggleRecording} 
+                />
+                {isConnected ? <span className="text-green-500 text-xs">● LiveKit Connected</span> : <span className="text-red-500 text-xs">● Disconnected</span>}
+            </div>
+            <span>{prompt.length} chars • ⌘+Enter to submit</span>
           </div>
         </div>
 
         {/* Action Button */}
         <div className="mt-8 flex justify-center">
           <Button
-            variant="industrial"
-            size="xl"
             onClick={handleSubmit}
             disabled={!prompt.trim()}
             className="min-w-[200px]"

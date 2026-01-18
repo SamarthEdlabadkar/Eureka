@@ -12,6 +12,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from groq import Groq
 import instructor
+from livekit import api
 
 from models import RefinementResult
 from agents import run_agents
@@ -205,6 +206,30 @@ def not_found(error):
 def method_not_allowed(error):
     """Handle 405 errors"""
     return jsonify({"success": False, "error": "Method not allowed"}), 405
+
+
+@app.route("/api/token", methods=["POST"])
+def create_token():
+    """
+    Generate a LiveKit token for the frontend.
+    """
+    try:
+        data = request.get_json()
+        room_name = data.get("room_name", "default-room")
+        participant_name = data.get("participant_name", "user")
+
+        api_key = os.getenv("LIVEKIT_API_KEY")
+        api_secret = os.getenv("LIVEKIT_API_SECRET")
+
+        if not api_key or not api_secret:
+            return jsonify({"error": "LiveKit credentials not configured"}), 500
+
+        grant = api.VideoGrant(room_join=True, room=room_name)
+        token = api.AccessToken(api_key, api_secret, grant=grant, identity=participant_name, name=participant_name)
+        
+        return jsonify({"token": token.to_jwt()}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.errorhandler(500)
