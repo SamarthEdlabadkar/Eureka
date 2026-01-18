@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent Test Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        .container {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .status.disconnected {
+            background: #331111;
+            border: 1px solid #ff4444;
+            color: #ff8888;
+        }
+        .status.connected {
+            background: #113311;
+            border: 1px solid #44ff44;
+            color: #88ff88;
+        }
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #00dd77;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+        button.danger {
+            background: #ff4444;
+            color: #fff;
+        }
+        button.danger:hover {
+            background: #dd3333;
+        }
+        #chatMessages {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .message {
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .message.agent {
+            background: #1a2a1a;
+            border-left: 3px solid #00ff88;
+        }
+        .message.system {
+            background: #1a1a2a;
+            border-left: 3px solid #4488ff;
+            color: #aabbff;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00ff88;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+        .info {
+            background: #1a1a2a;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aabbff;
+        }
+        .code {
+            background: #000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Voice Agent Test Client</h1>
+        <p style="color: #888; margin-bottom: 30px;">Connect to your LiveKit agent and test voice refinement</p>
+
+        <div class="input-group">
+            <label for="roomName">Room Name:</label>
+            <input type="text" id="roomName" placeholder="test-room" value="test-room">
+        </div>
+
+        <div class="input-group">
+            <label for="userName">Your Name:</label>
+            <input type="text" id="userName" placeholder="User" value="User">
+        </div>
+
+        <div class="status disconnected" id="status">
+            ⚫ DISCONNECTED - Click connect to start
+        </div>
+
+        <button id="connectBtn" onclick="connectToRoom()">Connect to Room</button>
+        <button id="disconnectBtn" onclick="disconnectFromRoom()" disabled class="danger">Disconnect</button>
+
+        <h3 style="margin-top: 30px; color: #00ff88;">Refined Messages:</h3>
+        <div id="chatMessages">
+            <div class="message system">Waiting for connection...</div>
+        </div>
+
+        <div class="info">
+            <strong>📝 How to use:</strong><br>
+            1. Make sure your agent is running: <span class="code">python agent.py dev</span><br>
+            2. Click "Connect to Room"<br>
+            3. Allow microphone access when prompted<br>
+            4. Start speaking - your refined text will appear below<br>
+            5. The agent processes your speech and returns professional text
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/livekit-client@2.5.8/dist/livekit-client.umd.js"></script>
+    <script>
+        // Wait for the script to fully load
+        let room = null;
+        let audioTrack = null;
+
+        async function getToken(roomName, participantName) {
+            // For testing, we'll create a simple token request
+            // In production, this should go through your backend
+            const response = await fetch('http://localhost:8080/api/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    roomName: roomName,
+                    participantName: participantName,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get token. Make sure token server is running.');
+            }
+
+            const data = await response.json();
+            return data.token;
+        }
+
+        async function connectToRoom() {
+            const roomName = document.getElementById('roomName').value || 'test-room';
+            const userName = document.getElementById('userName').value || 'User';
+            const statusDiv = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const chatMessages = document.getElementById('chatMessages');
+
+            try {
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '🔄 CONNECTING...';
+                connectBtn.disabled = true;
+
+                // Get token
+                const token = await getToken(roomName, userName);
+
+                // Create room instance
+                room = new window.LivekitClient.Room({
+                    adaptiveStream: true,
+                    dynacast: true,
+                });
+
+                // Set up event listeners
+                room.on('connected', () => {
+                    statusDiv.className = 'status connected';
+                    statusDiv.innerHTML = '🟢 CONNECTED - Agent is listening';
+                    disconnectBtn.disabled = false;
+                    addMessage('system', 'Connected to room. Start speaking!');
+                });
+
+                room.on('disconnected', () => {
+                    statusDiv.className = 'status disconnected';
+                    statusDiv.innerHTML = '⚫ DISCONNECTED';
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    addMessage('system', 'Disconnected from room');
+                });
+
+                room.on('dataReceived', (payload, participant, kind, topic) => {
+                    const message = new TextDecoder().decode(payload);
+                    addMessage('agent', message);
+                });
+
+                room.on('chatMessage', (message) => {
+                    addMessage('agent', message.message);
+                });
+
+                // Connect to the room
+                const wsUrl = 'wss://concept-forge-2eg20nbl.livekit.cloud';
+                await room.connect(wsUrl, token);
+
+                // Enable microphone
+                audioTrack = await window.LivekitClient.createLocalAudioTrack({
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                });
+                await room.localParticipant.publishTrack(audioTrack);
+
+                addMessage('system', '🎤 Microphone enabled');
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '⚠️ CONNECTION FAILED: ' + error.message;
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                addMessage('system', 'Error: ' + error.message);
+            }
+        }
+
+        async function disconnectFromRoom() {
+            if (room) {
+                await room.disconnect();
+                room = null;
+                audioTrack = null;
+            }
+        }
+
+        function addMessage(type, text) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `<small style="color: #666;">[${timestamp}]</small> ${text}`;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (room) {
+                room.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>

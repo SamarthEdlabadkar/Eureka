@@ -1,0 +1,4 @@
+livekit
+livekit-agents
+livekit-plugins-groq
+python-dotenv
