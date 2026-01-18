@@ -71,7 +71,7 @@ export function NodeDetailSheet({ node, graphData = [], onClose, onNavigateToNod
                 className="inline-flex items-center gap-2 px-3 py-2 text-sm font-bold"
                 style={{
                   backgroundColor: color,
-                  color: node.criticality >= 4 && node.criticality <= 5 ? "#000" : "#fff",
+                  color: node.criticality >= 6 && node.criticality <= 8 ? "#000" : "#fff",
                 }}
               >
                 <span>CRITICALITY:</span>

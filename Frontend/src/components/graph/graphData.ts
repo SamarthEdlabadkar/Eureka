@@ -102,15 +102,15 @@ export function getGraphDataFromEndpoint(cpmTasks?: any[]): GraphNode[] {
 }
 
 export function getNodeColor(criticality: number): string {
-    if (criticality >= 8) return "#ef4444"; // Industrial Red
-    if (criticality >= 6) return "#f97316"; // Safety Orange
-    if (criticality >= 4) return "#eab308"; // Warning Yellow
-    return "#22c55e"; // Signal Green
+    if (criticality >= 10) return "#ef4444"; // Red
+    if (criticality >= 9) return "#f97316"; // Orange
+    if (criticality >= 6) return "#eab308"; // Yellow
+    return "#22c55e"; // Green
 }
 
 export function getCriticalityLabel(criticality: number): string {
-    if (criticality >= 8) return "HIGH";
-    if (criticality >= 6) return "MEDIUM-HIGH";
-    if (criticality >= 4) return "MEDIUM";
+    if (criticality >= 10) return "CRITICAL";
+    if (criticality >= 9) return "HIGH";
+    if (criticality >= 6) return "MEDIUM";
     return "LOW";
 }
