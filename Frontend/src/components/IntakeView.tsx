@@ -18,17 +18,18 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
   const [prompt, setPrompt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  const {
-    isListening,
-    status,
-    transcription,
-    audioLevels,
+  
+  const { 
+    isListening, 
+    status, 
+    transcription, 
+    audioLevels, 
     toggleListening,
   } = useVoiceInput({
     onTranscriptionComplete: (text) => setPrompt(text),
   });
 
+  // Sync transcription to prompt as it types
   useEffect(() => {
     if (transcription && isListening) {
       setPrompt(transcription);
@@ -113,7 +114,7 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
                   disabled={isListening}
                 />
               </div>
-
+              
               <VoiceMicButton
                 isListening={isListening}
                 status={status}
@@ -128,10 +129,10 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
                 {prompt.length} characters
               </span>
               <span className="font-mono text-xs text-muted-foreground">
-                STATUS: {isListening
-                  ? status.toUpperCase()
-                  : prompt.length > 20
-                    ? "READY"
+                STATUS: {isListening 
+                  ? status.toUpperCase() 
+                  : prompt.length > 20 
+                    ? "READY" 
                     : "AWAITING INPUT"}
               </span>
             </div>
@@ -150,8 +151,8 @@ const IntakeView = ({ onAnalyze }: IntakeViewProps) => {
 
           <div className="text-center">
             <p className="font-mono text-xs text-muted-foreground/60">
-              {isListening
-                ? "Click microphone to stop recording"
+              {isListening 
+                ? "Click microphone to stop recording" 
                 : "Press analyze to generate constraint specifications • Click mic for voice input"}
             </p>
           </div>
