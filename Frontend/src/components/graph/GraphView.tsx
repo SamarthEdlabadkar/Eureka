@@ -7,9 +7,10 @@ import HomeButton from "@/components/HomeButton";
 
 interface GraphViewProps {
   onHome: () => void;
+  phaseIIData?: any;
 }
 
-export function GraphView({ onHome }: GraphViewProps) {
+export function GraphView({ onHome, phaseIIData }: GraphViewProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   const handleLoadingComplete = useCallback(() => {
@@ -38,7 +39,7 @@ export function GraphView({ onHome }: GraphViewProps) {
                   <p className="text-xs text-muted-foreground">CRITICALITY-BASED VISUALIZATION</p>
                 </div>
               </div>
-              
+
               {/* Legend */}
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-2">
@@ -59,7 +60,7 @@ export function GraphView({ onHome }: GraphViewProps) {
                 </div>
               </div>
             </div>
-            
+
             {/* Split Screen Container */}
             <div className="flex-1 flex min-h-0">
               {/* Left Panel - Tech Stack (30%) */}
@@ -72,15 +73,20 @@ export function GraphView({ onHome }: GraphViewProps) {
                 <div className="h-full flex flex-col">
                   <div className="px-4 py-3 border-b border-border shrink-0">
                     <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      Tech Stack Output
+                      Tech Requirements
                     </h2>
                   </div>
                   <div className="flex-1 min-h-0">
-                    <TechStackMarkdown />
+                    <TechStackMarkdown
+                      trdContent={phaseIIData?.technical_requirements?.article}
+                      trdStructure={phaseIIData?.technical_requirements?.trd_structure}
+                      sections={phaseIIData?.technical_requirements?.sections}
+                      wordCount={phaseIIData?.technical_requirements?.word_count}
+                    />
                   </div>
                 </div>
               </motion.div>
-              
+
               {/* Right Panel - Graph (70%) */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -88,7 +94,15 @@ export function GraphView({ onHome }: GraphViewProps) {
                 transition={{ delay: 0.3, duration: 0.4 }}
                 className="w-[70%] overflow-hidden"
               >
-                <DependencyGraph />
+                <DependencyGraph
+                  cpmTasks={phaseIIData?.critical_path?.cpm_structure?.tasks}
+                  criticalPath={phaseIIData?.critical_path?.critical_path}
+                  totalDuration={phaseIIData?.critical_path?.total_duration}
+                  tracks={phaseIIData?.critical_path?.cpm_structure?.tracks}
+                  resourceAllocation={phaseIIData?.critical_path?.resource_allocation}
+                  taskBreakdown={phaseIIData?.task_breakdown?.tasks}
+                  wbsStructure={phaseIIData?.task_breakdown?.wbs_structure}
+                />
               </motion.div>
             </div>
           </motion.div>

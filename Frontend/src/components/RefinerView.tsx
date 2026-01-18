@@ -14,7 +14,7 @@ interface RefinerViewProps {
   userPrompt: string;
   refineResult: RefinementResult | null;
   onHome: () => void;
-  onGeneratePlan: () => void;
+  onGeneratePlan: (data: any) => void;
 }
 
 interface ConstraintPoint {

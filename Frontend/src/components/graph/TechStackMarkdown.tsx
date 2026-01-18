@@ -1,5 +1,12 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+interface TechStackMarkdownProps {
+  trdContent?: string;
+  trdStructure?: any;
+  sections?: string[];
+  wordCount?: number;
+}
+
 const TECH_STACK_CONTENT = `# TECH_STACK_OUTPUT
 
 ## Frontend
@@ -74,12 +81,33 @@ src/
 - [x] No sensitive data exposure
 `;
 
-export function TechStackMarkdown() {
+export function TechStackMarkdown({ trdContent, trdStructure, sections, wordCount }: TechStackMarkdownProps) {
+  // Use real TRD content from endpoint, fall back to default if not available
+  const content = trdContent || TECH_STACK_CONTENT;
+  const displaySections = sections && sections.length > 0 ? sections : [];
+  const displayWordCount = wordCount && wordCount > 0 ? wordCount : null;
+
   return (
     <ScrollArea className="h-full">
       <div className="p-6 font-mono text-sm">
+        {/* TRD Metadata */}
+        {(displaySections.length > 0 || displayWordCount) && (
+          <div className="mb-4 pb-4 border-b border-border text-xs text-muted-foreground">
+            {displaySections.length > 0 && (
+              <div className="mb-2">
+                <span className="text-primary">SECTIONS:</span> {displaySections.join(' • ')}
+              </div>
+            )}
+            {displayWordCount && (
+              <div>
+                <span className="text-primary">WORDS:</span> {displayWordCount}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="prose prose-invert prose-sm max-w-none">
-          {TECH_STACK_CONTENT.split('\n').map((line, index) => {
+          {content.split('\n').map((line, index) => {
             // Headers
             if (line.startsWith('# ')) {
               return (
@@ -102,12 +130,12 @@ export function TechStackMarkdown() {
                 </h3>
               );
             }
-            
+
             // Horizontal rule
             if (line.startsWith('---')) {
               return <hr key={index} className="border-border my-4" />;
             }
-            
+
             // List items with bold
             if (line.startsWith('- **')) {
               const match = line.match(/- \*\*(.+?)\*\*(.*)$/);
@@ -123,7 +151,7 @@ export function TechStackMarkdown() {
                 );
               }
             }
-            
+
             // Regular list items
             if (line.startsWith('- ')) {
               return (
@@ -133,7 +161,7 @@ export function TechStackMarkdown() {
                 </div>
               );
             }
-            
+
             // Checkbox items
             if (line.startsWith('- [ ]') || line.startsWith('- [x]')) {
               const checked = line.startsWith('- [x]');
@@ -149,7 +177,7 @@ export function TechStackMarkdown() {
                 </div>
               );
             }
-            
+
             // Code blocks
             if (line.startsWith('```')) {
               return null;
@@ -161,7 +189,7 @@ export function TechStackMarkdown() {
                 </div>
               );
             }
-            
+
             // Table header
             if (line.startsWith('| Metric')) {
               return (
@@ -171,12 +199,12 @@ export function TechStackMarkdown() {
                 </div>
               );
             }
-            
+
             // Table separator
             if (line.startsWith('|---')) {
               return null;
             }
-            
+
             // Table rows
             if (line.startsWith('| ') && !line.startsWith('| Metric') && !line.startsWith('|---')) {
               const cells = line.split('|').filter(c => c.trim());
@@ -189,7 +217,7 @@ export function TechStackMarkdown() {
                 );
               }
             }
-            
+
             // Numbered list
             if (/^\d+\./.test(line)) {
               const match = line.match(/^(\d+)\. (.+)$/);
@@ -202,12 +230,12 @@ export function TechStackMarkdown() {
                 );
               }
             }
-            
+
             // Empty lines
             if (line.trim() === '') {
               return <div key={index} className="h-2" />;
             }
-            
+
             return (
               <p key={index} className="text-muted-foreground mb-1">
                 {line}

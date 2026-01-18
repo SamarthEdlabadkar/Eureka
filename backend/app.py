@@ -4,6 +4,7 @@ Flask API for Eureka
 
 from datetime import datetime
 import os
+import json
 
 import tracing
 
@@ -14,7 +15,8 @@ from groq import Groq
 import instructor
 
 from models import RefinementResult
-from backend.refinement_agents import run_agents
+from refinement_agents import run_agents
+from phase_ii_agents import run_phase2_workflow
 
 # Load environment variables from .env if present
 load_dotenv()
@@ -193,6 +195,142 @@ def run_planning_agents():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/agents/phase-ii", methods=["POST"])
+def run_phase_ii_agents():
+    """
+    Run the Phase II LangGraph agents workflow for detailed project analysis.
+
+    This endpoint executes three agents in parallel/sequential order:
+    1. Task Breakdown Agent (WBS) - Decomposes project into Work Breakdown Structure
+    2. Technical Requirements Agent (TRD) - Generates Technical Requirements Document
+    3. Critical Path Agent (CPM) - Performs Critical Path Method analysis
+
+    Expected JSON payload:
+    {
+        "project_description": "string - The project description or idea to analyze",
+        "strategic_plan": "object - (optional) The strategic plan output from Phase I agents"
+    }
+
+    Returns:
+    {
+        "success": bool,
+        "result": {
+            "task_breakdown": {
+                "tasks": [array of task names],
+                "total_tasks": number,
+                "dependencies": {task: [prerequisite tasks]},
+                "wbs_structure": {raw LLM output with hierarchical breakdown}
+            },
+            "technical_requirements": {
+                "article": "string - Full TRD document",
+                "sections": [array of section names],
+                "word_count": number,
+                "trd_structure": {detailed tech stack and API specs}
+            },
+            "critical_path": {
+                "critical_path": [array of task IDs in critical path],
+                "total_duration": number (days),
+                "critical_tasks": [array of critical task IDs],
+                "resource_allocation": {track: {roles and counts}},
+                "cpm_structure": {
+                    "tasks": [array of task objects with id, title, criticality, track, duration, dependencies],
+                    "tracks": [array of parallel tracks],
+                    "total_duration": number
+                }
+            },
+            "errors": [array of any errors that occurred]
+        },
+        "error": "string - Error message if failed"
+    }
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"success": False, "error": "No JSON data provided"}), 400
+
+        # Extract required fields
+        project_description = data.get("project_description")
+        strategic_plan = data.get("strategic_plan", "")
+
+        if not project_description:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Missing required field: project_description",
+                    }
+                ),
+                400,
+            )
+
+        # Run the Phase II agents workflow
+        workflow_result = run_phase2_workflow(project_description)
+
+        # Extract structured outputs from workflow result
+        result = {
+            "task_breakdown": None,
+            "technical_requirements": None,
+            "critical_path": None,
+            "errors": workflow_result.get("errors", []),
+        }
+
+        # Parse task breakdown output
+        if workflow_result.get("task_breakdown"):
+            task_output = workflow_result["task_breakdown"]
+            result["task_breakdown"] = {
+                "tasks": task_output.tasks,
+                "total_tasks": task_output.total_tasks,
+                "dependencies": task_output.dependencies,
+                "wbs_structure": workflow_result.get("wbs_structure", {}),
+            }
+
+        # Parse technical requirements (TRD) output
+        if workflow_result.get("article"):
+            article_output = workflow_result["article"]
+            result["technical_requirements"] = {
+                "article": article_output.article,
+                "sections": article_output.sections,
+                "word_count": article_output.word_count,
+                "trd_structure": workflow_result.get("trd_structure", {}),
+            }
+
+        # Parse critical path output
+        if workflow_result.get("critical_path"):
+            cpm_output = workflow_result["critical_path"]
+            cpm_structure = workflow_result.get("cpm_structure", {})
+
+            # Ensure cpm_structure is properly serialized as JSON
+            if isinstance(cpm_structure, dict):
+                # Make sure all nested objects are JSON serializable
+                cpm_structure_json = {
+                    "tasks": cpm_structure.get("tasks", []),
+                    "tracks": cpm_structure.get("tracks", []),
+                    "critical_path": cpm_structure.get("critical_path", []),
+                    "total_duration": cpm_structure.get("total_duration", 0),
+                    "resource_allocation": cpm_structure.get("resource_allocation", {}),
+                }
+            else:
+                cpm_structure_json = {}
+
+            result["critical_path"] = {
+                "critical_path": cpm_output.critical_path,
+                "total_duration": cpm_output.total_duration,
+                "critical_tasks": cpm_output.critical_tasks,
+                "resource_allocation": cpm_output.resource_allocation,
+                "cpm_structure": cpm_structure_json,
+            }
+
+        return jsonify({"success": True, "result": result}), 200
+
+    except Exception as e:
+        import traceback
+
+        error_trace = traceback.format_exc()
+        return jsonify({"success": False, "error": str(e), "trace": error_trace}), 500
 
 
 @app.errorhandler(404)
