@@ -6,12 +6,112 @@ import VoiceMicButton from "@/components/VoiceMicButton";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 
 interface PlanReviewViewProps {
+  planData?: any;
   onAccept: () => void;
   onHome: () => void;
   onBack: () => void;
 }
 
 type ReviewState = "decision" | "feedback" | "processing";
+
+const convertToMarkdown = (data: any): string => {
+  if (!data) return "";
+  
+  let markdown = "# Strategic Plan\n\n";
+
+  // Add objective and goals
+  if (data.master_prompt) {
+    const mp = data.master_prompt;
+    markdown += `## Objective\n\n${mp.objective}\n\n`;
+    
+    if (mp.goals && mp.goals.length) {
+      markdown += `## Goals\n\n`;
+      mp.goals.forEach((goal: string) => {
+        markdown += `- ${goal}\n`;
+      });
+      markdown += `\n`;
+    }
+
+    if (mp.constraints_and_requirements) {
+      markdown += `## Constraints & Requirements\n\n`;
+      const cr = mp.constraints_and_requirements;
+      if (cr.functional) {
+        markdown += `### Functional\n\n`;
+        cr.functional.forEach((item: string) => {
+          markdown += `- ${item}\n`;
+        });
+        markdown += `\n`;
+      }
+      if (cr['non-functional']) {
+        markdown += `### Non-Functional\n\n`;
+        cr['non-functional'].forEach((item: string) => {
+          markdown += `- ${item}\n`;
+        });
+        markdown += `\n`;
+      }
+    }
+
+    if (mp.success_criteria) {
+      markdown += `## Success Criteria\n\n`;
+      const sc = mp.success_criteria;
+      if (sc.functional) {
+        markdown += `### Functional\n\n`;
+        sc.functional.forEach((item: string) => {
+          markdown += `- ${item}\n`;
+        });
+        markdown += `\n`;
+      }
+      if (sc['non-functional']) {
+        markdown += `### Non-Functional\n\n`;
+        sc['non-functional'].forEach((item: string) => {
+          markdown += `- ${item}\n`;
+        });
+        markdown += `\n`;
+      }
+    }
+
+    if (mp.key_deliverables && mp.key_deliverables.length) {
+      markdown += `## Key Deliverables\n\n`;
+      mp.key_deliverables.forEach((item: string) => {
+        markdown += `- ${item}\n`;
+      });
+      markdown += `\n`;
+    }
+  }
+
+  // Add strategic roadmap
+  if (data.strategic_roadmap) {
+    const sr = data.strategic_roadmap;
+    markdown += `## Strategic Roadmap\n\n`;
+    
+    if (sr.vision_statement) {
+      markdown += `### Vision\n\n${sr.vision_statement}\n\n`;
+    }
+
+    if (sr.key_phases && sr.key_phases.length) {
+      markdown += `### Key Phases\n\n`;
+      sr.key_phases.forEach((phase: any) => {
+        markdown += `#### ${phase.name} (${phase.duration})\n\n`;
+        if (phase.activities) {
+          phase.activities.forEach((activity: string) => {
+            markdown += `- ${activity}\n`;
+          });
+        }
+        markdown += `\n`;
+      });
+    }
+
+    if (sr.north_star_metrics && sr.north_star_metrics.length) {
+      markdown += `### North Star Metrics\n\n`;
+      sr.north_star_metrics.forEach((metric: string) => {
+        markdown += `- ${metric}\n`;
+      });
+      markdown += `\n`;
+    }
+  }
+
+  return markdown;
+};
 
 const mockMarkdownSpec = `# Technical Architecture Specification
 
@@ -93,9 +193,10 @@ services:
 > Timestamp: ${new Date().toISOString()}
 `;
 
-const PlanReviewView = ({ onAccept, onHome, onBack }: PlanReviewViewProps) => {
+const PlanReviewView = ({ planData, onAccept, onHome, onBack }: PlanReviewViewProps) => {
   const [state, setState] = useState<ReviewState>("decision");
   const [feedback, setFeedback] = useState("");
+  const [markdownContent] = useState<string>(convertToMarkdown(planData));
   
   const { 
     isListening, 
@@ -206,7 +307,7 @@ const PlanReviewView = ({ onAccept, onHome, onBack }: PlanReviewViewProps) => {
             </div>
             <div className="border border-[#333] bg-card p-6 overflow-auto max-h-[60vh]">
               <div className="font-mono text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
-                {mockMarkdownSpec.split('\n').map((line, i) => {
+                {markdownContent.split('\n').map((line, i) => {
                   // Simple markdown-like rendering
                   if (line.startsWith('# ')) {
                     return <h1 key={i} className="text-xl font-bold text-foreground mt-6 mb-3 first:mt-0">{line.slice(2)}</h1>;
@@ -216,6 +317,9 @@ const PlanReviewView = ({ onAccept, onHome, onBack }: PlanReviewViewProps) => {
                   }
                   if (line.startsWith('### ')) {
                     return <h3 key={i} className="text-base font-semibold text-foreground mt-4 mb-2">{line.slice(4)}</h3>;
+                  }
+                  if (line.startsWith('#### ')) {
+                    return <h4 key={i} className="text-sm font-semibold text-foreground mt-3 mb-1">{line.slice(5)}</h4>;
                   }
                   if (line.startsWith('```')) {
                     return <div key={i} className="text-primary/70">{line}</div>;

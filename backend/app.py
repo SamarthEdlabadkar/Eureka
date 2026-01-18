@@ -5,6 +5,8 @@ Flask API for Eureka
 from datetime import datetime
 import os
 
+import tracing
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -77,12 +79,37 @@ def refine():
 
         # Prompt aligned to Pydantic models in models.RefinementResult/Category/CriticalQuestion
         prompt = f"""
-        Act as a Technical Systems Consultant and VC Strategist with a focus on failure analysis. 
-        Your mission is to help me "pre-mortem" this idea: {topic}. 
-        Instead of giving me a report, I want you to poke holes in it by asking me sharp, informal, and probing questions. 
-        Focus heavily on the technical "how" and the logistical "why." Think like a co-founder trying to find the hidden technical debt, scaling bottlenecks, and logistical nightmares before we write a single line of code. 
-        Ask me about the messy stuff: edge cases in user behavior, hardware/software friction, supply chain or API dependencies, and how this breaks when we go from 1 to 1,000 users. 
-        Keep it supportive and curious, but don't let me off the hook—force me to think through the unsexy, operational realities of making this work.
+        You are a Technical Systems Consultant and VC Strategist with expertise in failure analysis and pre-mortems.
+
+Your task is to analyze this idea and generate exactly 3 categories of critical questions:
+"{topic}"
+
+Generate EXACTLY 3 CATEGORIES. For each category:
+1. Provide a concise category name (3-5 words)
+2. List 2-3 critical questions for that category
+3. Each question should be under 200 characters
+4. Questions should probe deeply into technical feasibility, scaling challenges, logistical issues, and edge cases
+
+Focus on:
+- Technical "how" - architecture, dependencies, technology choices
+- Logistical "why" - supply chain, operational challenges, resource constraints
+- Scalability - what breaks when growing from 1 to 1,000 users
+- Edge cases - user behavior exceptions, failure modes, hidden bottlenecks
+
+Example format (for reference, not the actual output):
+Category 1: "Technical Architecture"
+- Question about core technical choices
+- Question about scaling considerations
+
+Category 2: "Operational Reality"  
+- Question about operational challenges
+- Question about resource allocation
+
+Category 3: "Market & User Dynamics"
+- Question about user behavior
+- Question about market fit
+
+Now generate the 3 categories for: {topic}
         """
 
         # Call Groq with Instructor for structured output
@@ -96,14 +123,15 @@ def refine():
             model=groq_model,
             messages=[{"role": "user", "content": prompt}],
             response_model=RefinementResult,
-            max_tokens=2000,
-            temperature=0.7,
+            max_tokens=2500,
+            temperature=0.3,
         )
 
         # Convert Pydantic model to dict for JSON response
         result_dict = result.model_dump()
+        refined_result = {"categories": result_dict["categories"][:3]}
 
-        return jsonify({"success": True, "result": result_dict, "topic": topic}), 200
+        return jsonify({"success": True, "result": refined_result, "topic": topic}), 200
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

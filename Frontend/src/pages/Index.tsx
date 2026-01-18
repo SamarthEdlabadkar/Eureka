@@ -15,6 +15,7 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<View>("intake");
   const [userPrompt, setUserPrompt] = useState("");
   const [refineResult, setRefineResult] = useState<RefinementResult | null>(null);
+  const [planData, setPlanData] = useState<any>(null);
 
   const handleAnalyze = (prompt: string, result: RefinementResult | null) => {
     setUserPrompt(prompt);
@@ -26,7 +27,8 @@ const Index = () => {
     setCurrentView("refiner");
   }, []);
 
-  const handleGeneratePlan = () => {
+  const handleGeneratePlan = (data: any) => {
+    setPlanData(data);
     setCurrentView("planReview");
   };
 
@@ -38,6 +40,7 @@ const Index = () => {
     setCurrentView("intake");
     setUserPrompt("");
     setRefineResult(null);
+    setPlanData(null);
   };
 
   const handleBackToRefiner = () => {
@@ -62,6 +65,7 @@ const Index = () => {
       )}
       {currentView === "planReview" && (
         <PlanReviewView 
+          planData={planData}
           onAccept={handleAcceptPlan}
           onHome={handleHome}
           onBack={handleBackToRefiner}
