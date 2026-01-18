@@ -1,5 +1,5 @@
 """
-Flask API for Eureka - Kicks off the refinement crew
+Flask API for Eureka
 """
 
 from datetime import datetime
@@ -12,6 +12,7 @@ from groq import Groq
 import instructor
 
 from models import RefinementResult
+from agents import run_agents
 
 # Load environment variables from .env if present
 load_dotenv()
@@ -98,6 +99,64 @@ def refine():
         result_dict = result.model_dump()
 
         return jsonify({"success": True, "result": result_dict, "topic": topic}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/agents/plan", methods=["POST"])
+def run_planning_agents():
+    """
+    Run the LangGraph agents workflow for strategic planning.
+
+    Expected JSON payload:
+    {
+        "topic": "string - The topic/domain for the project",
+        "user_idea": "string - The user's initial idea",
+        "constraints": "string - Any specific constraints (optional)"
+    }
+
+    Returns:
+    {
+        "success": bool,
+        "result": {
+            "master_prompt": "string - The structured master prompt from the Strategist",
+            "strategic_roadmap": "string - The high-level roadmap from the Project Planner",
+            "messages": [array of agent messages]
+        },
+        "error": "string - Error message if failed"
+    }
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"success": False, "error": "No JSON data provided"}), 400
+
+        # Extract required fields
+        topic = data.get("topic")
+        user_idea = data.get("user_idea")
+        constraints = data.get("constraints", "")
+
+        if not topic:
+            return (
+                jsonify({"success": False, "error": "Missing required field: topic"}),
+                400,
+            )
+
+        if not user_idea:
+            return (
+                jsonify(
+                    {"success": False, "error": "Missing required field: user_idea"}
+                ),
+                400,
+            )
+
+        # Run the agents workflow
+        result = run_agents(topic, user_idea, constraints)
+
+        return jsonify({"success": True, "result": result}), 200
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
